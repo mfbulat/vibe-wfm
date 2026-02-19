@@ -795,11 +795,12 @@ function App() {
 
                                     const date = visibleDates[columnIndex]
                                     if (!date) return null
+                                    const headerDateKey = dateToKey(date)
 
                                     return (
                                         <div
-                                            key={`header-date-${dateToKey(date)}`}
-                                            className={styles.virtualDateHeaderCell}
+                                            key={`header-date-${headerDateKey}`}
+                                            className={`${styles.virtualDateHeaderCell} ${headerDateKey === todayKey ? styles.todayDateHeader : ''}`}
                                             style={{left, width: columnWidth}}
                                         >
                                             <span>{weekdayFormatter.format(date)}</span>

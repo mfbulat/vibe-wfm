@@ -334,6 +334,21 @@ $row-height: 76px;
   }
 }
 
+.todayDateHeader {
+  background: linear-gradient(180deg, #e8f3ff, #f4f9ff);
+  box-shadow: inset 0 -2px 0 #2f8de8;
+  color: #1e4f84;
+
+  span {
+    color: #2f6ca9;
+    font-weight: 700;
+  }
+
+  strong {
+    color: #14508a;
+  }
+}
+
 .virtualRow {
   position: absolute;
   left: 0;

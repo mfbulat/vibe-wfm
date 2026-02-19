@@ -269,11 +269,15 @@ function App() {
     }
 
     const columnCount = viewMode === 'day' ? HOURS.length : visibleDates.length
-    const columnWidth = viewMode === 'day' ? HOUR_WIDTH : DATE_CELL_WIDTH
     const employeeColumnWidth =
         virtualViewport.width > 0 && virtualViewport.width <= MOBILE_BREAKPOINT
             ? EMPLOYEE_COLUMN_WIDTH_MOBILE
             : EMPLOYEE_COLUMN_WIDTH_DESKTOP
+    const weekAdaptiveColumnWidth =
+        viewMode === 'week' && !isMobile && virtualViewport.width > 0
+            ? Math.max((virtualViewport.width - employeeColumnWidth) / 7, 1)
+            : DATE_CELL_WIDTH
+    const columnWidth = viewMode === 'day' ? HOUR_WIDTH : weekAdaptiveColumnWidth
     const totalTimelineWidth = columnCount * columnWidth
     const totalGridWidth = employeeColumnWidth + totalTimelineWidth
     const totalGridHeight = HEADER_HEIGHT + employees.length * ROW_HEIGHT

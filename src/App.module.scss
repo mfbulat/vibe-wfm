@@ -39,6 +39,13 @@ $row-height: 76px;
   gap: 12px;
 }
 
+.modeControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .dateControls {
   display: flex;
   align-items: flex-end;
@@ -90,13 +97,12 @@ $row-height: 76px;
 }
 
 .periodBadge {
-  border: 1px solid #cfdceb;
-  background: #fff;
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
-  color: #2d4867;
+  font-size: 14px;
+  color: #6a798f;
   font-weight: 600;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .toolbarAddButton {
@@ -635,7 +641,7 @@ $row-height: 76px;
   }
 
   .periodBadge {
-    width: 100%;
+    width: auto;
   }
 
   .toolbarAddButton {

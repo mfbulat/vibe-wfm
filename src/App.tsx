@@ -612,17 +612,20 @@ function App() {
             <header className={styles.header}>
                 <h1>WFM Scheduler</h1>
                 <div className={styles.toolbar}>
-                    <div className={styles.viewSwitch}>
-                        {(['day', 'week', 'month'] as ViewMode[]).map((mode) => (
-                            <button
-                                key={mode}
-                                type="button"
-                                onClick={() => setViewMode(mode)}
-                                className={`${styles.viewButton} ${viewMode === mode ? styles.activeView : ''}`}
-                            >
-                                {mode === 'day' ? 'День' : mode === 'week' ? 'Неделя' : 'Месяц'}
-                            </button>
-                        ))}
+                    <div className={styles.modeControls}>
+                        <div className={styles.viewSwitch}>
+                            {(['day', 'week', 'month'] as ViewMode[]).map((mode) => (
+                                <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => setViewMode(mode)}
+                                    className={`${styles.viewButton} ${viewMode === mode ? styles.activeView : ''}`}
+                                >
+                                    {mode === 'day' ? 'День' : mode === 'week' ? 'Неделя' : 'Месяц'}
+                                </button>
+                            ))}
+                        </div>
+                        <div className={styles.periodBadge}>{periodLabel}</div>
                     </div>
 
                     <div className={styles.dateControls}>
@@ -635,7 +638,6 @@ function App() {
                                 className={styles.datepicker}
                             />
                         </label>
-                        <div className={styles.periodBadge}>{periodLabel}</div>
                         <button
                             type="button"
                             className={styles.toolbarAddButton}

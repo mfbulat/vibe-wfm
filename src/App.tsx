@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useRef, useState} from 'react'
 import type {DragEvent, FormEvent, PointerEvent as ReactPointerEvent} from 'react'
+import {loadShiftsFromIndexedDb, saveShiftsToIndexedDb} from './indexedDb'
 import styles from './App.module.scss'
 
 type Employee = {
@@ -56,6 +57,7 @@ const MINI_HOUR_WIDTH = DATE_TIMELINE_WIDTH / 24
 const MAX_MODAL_MINUTES = MINUTES_IN_DAY - SNAP_MINUTES
 const DEFAULT_SHIFT_START = 9 * 60
 const DATE_CHIP_GAP = 4
+const VIEW_MODE_STORAGE_KEY = 'vibe-wfm:view-mode'
 
 const EMPLOYEE_COLUMN_WIDTH_DESKTOP = 180
 const EMPLOYEE_COLUMN_WIDTH_MOBILE = 130
@@ -137,6 +139,24 @@ const getMonthDates = (date: Date) => {
 
 const dateCellKey = (employeeId: string, dateKey: string) => `${employeeId}|${dateKey}`
 
+const isViewMode = (value: string): value is ViewMode =>
+    value === 'day' || value === 'week' || value === 'month'
+
+const getInitialViewMode = (): ViewMode => {
+    if (typeof window === 'undefined') return 'day'
+
+    try {
+        const stored = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY)
+        if (stored && isViewMode(stored)) {
+            return stored
+        }
+    } catch (error) {
+        console.error('Failed to read view mode from localStorage:', error)
+    }
+
+    return 'day'
+}
+
 const getVirtualRange = (
     itemCount: number,
     itemSize: number,
@@ -194,7 +214,7 @@ const initialShifts: Shift[] = [
 ]
 
 function App() {
-    const [viewMode, setViewMode] = useState<ViewMode>('day')
+    const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode)
     const [selectedDate, setSelectedDate] = useState<Date>(new Date())
     const [isMobile, setIsMobile] = useState(() =>
         typeof window !== 'undefined' ? window.innerWidth <= MOBILE_BREAKPOINT : false,
@@ -205,6 +225,7 @@ function App() {
     const [resizeState, setResizeState] = useState<ResizeState | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [modalDraft, setModalDraft] = useState<ModalDraft | null>(null)
+    const [isStorageReady, setIsStorageReady] = useState(false)
     const [virtualViewport, setVirtualViewport] = useState<VirtualViewport>({
         width: 0,
         height: 0,
@@ -266,6 +287,14 @@ function App() {
 
         return () => mediaQuery.removeEventListener('change', onChange)
     }, [])
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode)
+        } catch (error) {
+            console.error('Failed to save view mode to localStorage:', error)
+        }
+    }, [viewMode])
 
     useEffect(() => {
         const viewport = gridViewportRef.current
@@ -356,6 +385,37 @@ function App() {
         const size = visibleColumnRange.end - visibleColumnRange.start + 1
         return Array.from({length: size}, (_, i) => visibleColumnRange.start + i)
     }, [visibleColumnRange.end, visibleColumnRange.start])
+
+    useEffect(() => {
+        let isCancelled = false
+
+        void loadShiftsFromIndexedDb()
+            .then((storedShifts) => {
+                if (isCancelled) return
+                if (storedShifts) {
+                    setShifts(storedShifts.map((shift) => ({...shift})))
+                }
+                setIsStorageReady(true)
+            })
+            .catch((error) => {
+                console.error('Failed to load shifts from IndexedDB:', error)
+                if (!isCancelled) {
+                    setIsStorageReady(true)
+                }
+            })
+
+        return () => {
+            isCancelled = true
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!isStorageReady) return
+
+        void saveShiftsToIndexedDb(shifts).catch((error) => {
+            console.error('Failed to save shifts to IndexedDB:', error)
+        })
+    }, [isStorageReady, shifts])
 
     useEffect(() => {
         if (!resizeState) return

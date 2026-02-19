@@ -43,7 +43,7 @@ $row-height: 76px;
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .dateControls {
@@ -638,6 +638,11 @@ $row-height: 76px;
   .dateControls {
     width: 100%;
     align-items: stretch;
+  }
+
+  .modeControls {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
   .periodBadge {

@@ -7,8 +7,9 @@ $muted: #6a798f;
 $row-height: 76px;
 
 .page {
-  height: 100vh;
-  max-height: 100vh;
+  min-height: 100vh;
+  height: auto;
+  max-height: none;
   background: radial-gradient(circle at 12% 8%, #d6e9ff 0%, transparent 38%),
     radial-gradient(circle at 88% 10%, #e4f6e3 0%, transparent 33%),
     $page-bg;
@@ -16,7 +17,8 @@ $row-height: 76px;
   padding: 28px 28px 40px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .header {
@@ -437,7 +439,6 @@ $row-height: 76px;
   color: #fff;
   display: flex;
   align-items: stretch;
-  height: 30px;
   box-shadow: 0 5px 11px rgba(20, 84, 145, 0.2);
   overflow: hidden;
   cursor: grab;
@@ -580,9 +581,22 @@ $row-height: 76px;
   }
 }
 
+.mobileDesktopHint {
+  list-style-position: inside;
+  margin-left: -20px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #f1c37a;
+  background: linear-gradient(135deg, #fff2da, #ffe8bf);
+  color: #7a3f00;
+  font-weight: 700;
+}
+
 @media (max-width: 900px) {
   .page {
     padding: 14px;
+    display: block;
+    overflow: visible;
   }
 
   .employeeHeader,
@@ -605,5 +619,14 @@ $row-height: 76px;
 
   .periodBadge {
     width: 100%;
+  }
+
+  .mobileBoard {
+    overflow: visible;
+  }
+
+  .mobileEmployeeList {
+    flex: none;
+    overflow: visible;
   }
 }

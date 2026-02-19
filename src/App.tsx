@@ -55,7 +55,6 @@ const DATE_TIMELINE_WIDTH = DATE_CELL_WIDTH - DATE_CELL_PADDING * 2
 const MINI_HOUR_WIDTH = DATE_TIMELINE_WIDTH / 24
 const MAX_MODAL_MINUTES = MINUTES_IN_DAY - SNAP_MINUTES
 const DEFAULT_SHIFT_START = 9 * 60
-const DATE_CHIP_HEIGHT = 30
 const DATE_CHIP_GAP = 4
 
 const EMPLOYEE_COLUMN_WIDTH_DESKTOP = 180
@@ -835,11 +834,12 @@ function App() {
                     const dateKey = dateToKey(date)
                     const cellShifts = getShiftsForCell(employee.id, dateKey)
                     const timelineInnerHeight = ROW_HEIGHT - 12
-                    const stackHeight = Math.max(
+                    const shiftCount = Math.max(cellShifts.length, 1)
+                    const availableHeight = Math.max(
+                      timelineInnerHeight - (shiftCount - 1) * DATE_CHIP_GAP,
                       0,
-                      cellShifts.length * DATE_CHIP_HEIGHT + (cellShifts.length - 1) * DATE_CHIP_GAP,
                     )
-                    const topOffset = Math.max((timelineInnerHeight - stackHeight) / 2, 0)
+                    const laneHeight = availableHeight / shiftCount
 
                     return (
                       <div
@@ -866,7 +866,8 @@ function App() {
                                 style={{
                                   left: chipLeft,
                                   width: chipWidth,
-                                  top: topOffset + index * (DATE_CHIP_HEIGHT + DATE_CHIP_GAP),
+                                  top: index * (laneHeight + DATE_CHIP_GAP),
+                                  height: laneHeight,
                                 }}
                               >
                                 <div
@@ -992,6 +993,9 @@ function App() {
       <footer className={styles.helpSection}>
         <h3>Как пользоваться WFM</h3>
         <ol>
+          {isMobile && (
+            <li className={styles.mobileDesktopHint}>Для полного функционала удобнее пользоваться на десктопе.</li>
+          )}
           <li>Выберите режим: День, Неделя или Месяц.</li>
           <li>Выберите дату в датапикере сверху.</li>
           <li>На десктопе: двойной клик по ячейке добавляет смену, drag and drop переносит смену.</li>

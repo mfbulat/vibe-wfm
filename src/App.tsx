@@ -17,6 +17,8 @@ type Shift = {
 }
 
 type ModalDraft = {
+  mode: 'create' | 'edit'
+  shiftId?: string
   employeeId: string
   dateKey: string
   title: string
@@ -195,6 +197,10 @@ const initialShifts: Shift[] = [
 function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('day')
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= MOBILE_BREAKPOINT : false,
+  )
+  const [mobileDateKey, setMobileDateKey] = useState(todayKey)
   const [shifts, setShifts] = useState<Shift[]>(initialShifts)
   const [draggingShiftId, setDraggingShiftId] = useState<string | null>(null)
   const [resizeState, setResizeState] = useState<ResizeState | null>(null)
@@ -251,6 +257,16 @@ function App() {
   const totalTimelineWidth = columnCount * columnWidth
   const totalGridWidth = employeeColumnWidth + totalTimelineWidth
   const totalGridHeight = HEADER_HEIGHT + employees.length * ROW_HEIGHT
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`)
+    const onChange = () => setIsMobile(mediaQuery.matches)
+
+    onChange()
+    mediaQuery.addEventListener('change', onChange)
+
+    return () => mediaQuery.removeEventListener('change', onChange)
+  }, [])
 
   useEffect(() => {
     const viewport = gridViewportRef.current
@@ -396,6 +412,7 @@ function App() {
 
     setError(null)
     setModalDraft({
+      mode: 'create',
       employeeId,
       dateKey,
       title: 'Новая смена',
@@ -404,12 +421,25 @@ function App() {
     })
   }
 
+  const openEditShiftModal = (shift: Shift) => {
+    setError(null)
+    setModalDraft({
+      mode: 'edit',
+      shiftId: shift.id,
+      employeeId: shift.employeeId,
+      dateKey: shift.dateKey,
+      title: shift.title,
+      startTime: formatTime(shift.start),
+      endTime: formatTime(shift.end),
+    })
+  }
+
   const closeModal = () => {
     setModalDraft(null)
     setError(null)
   }
 
-  const handleCreateShift = (event: FormEvent) => {
+  const handleSaveShift = (event: FormEvent) => {
     event.preventDefault()
     if (!modalDraft) return
 
@@ -439,18 +469,41 @@ function App() {
       return
     }
 
-    setShifts((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        employeeId: modalDraft.employeeId,
-        dateKey: modalDraft.dateKey,
-        title: modalDraft.title.trim() || 'Смена',
-        start: snappedStart,
-        end: snappedEnd,
-      },
-    ])
+    if (modalDraft.mode === 'edit' && modalDraft.shiftId) {
+      setShifts((prev) =>
+        prev.map((shift) =>
+          shift.id === modalDraft.shiftId
+            ? {
+                ...shift,
+                employeeId: modalDraft.employeeId,
+                dateKey: modalDraft.dateKey,
+                title: modalDraft.title.trim() || 'Смена',
+                start: snappedStart,
+                end: snappedEnd,
+              }
+            : shift,
+        ),
+      )
+    } else {
+      setShifts((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          employeeId: modalDraft.employeeId,
+          dateKey: modalDraft.dateKey,
+          title: modalDraft.title.trim() || 'Смена',
+          start: snappedStart,
+          end: snappedEnd,
+        },
+      ])
+    }
 
+    closeModal()
+  }
+
+  const handleDeleteShift = () => {
+    if (!modalDraft || modalDraft.mode !== 'edit' || !modalDraft.shiftId) return
+    setShifts((prev) => prev.filter((shift) => shift.id !== modalDraft.shiftId))
     closeModal()
   }
 
@@ -542,6 +595,18 @@ function App() {
         ? `Неделя: ${shortDateFormatter.format(visibleDates[0])} - ${shortDateFormatter.format(visibleDates[6])}`
         : `Месяц: ${monthYearFormatter.format(selectedDate)}`
 
+  const mobileDateOptions = useMemo(
+    () => visibleDates.map((date) => ({ key: dateToKey(date), date })),
+    [visibleDates],
+  )
+  const fallbackMobileDateKey = mobileDateOptions[0]?.key ?? selectedDateKey
+  const effectiveMobileDateKey = mobileDateOptions.some((option) => option.key === mobileDateKey)
+    ? mobileDateKey
+    : fallbackMobileDateKey
+  const mobileActiveDate =
+    mobileDateOptions.find((option) => option.key === effectiveMobileDateKey) ?? mobileDateOptions[0]
+  const mobileActiveDateKey = mobileActiveDate?.key ?? selectedDateKey
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -576,7 +641,65 @@ function App() {
         </div>
       </header>
 
-      <section className={styles.gridWrapper} ref={gridViewportRef}>
+      {isMobile ? (
+        <section className={styles.mobileBoard}>
+          <div className={styles.mobileDateRail}>
+            {mobileDateOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={`${styles.mobileDateButton} ${mobileActiveDateKey === option.key ? styles.mobileDateButtonActive : ''}`}
+                onClick={() => setMobileDateKey(option.key)}
+              >
+                <span>{weekdayFormatter.format(option.date)}</span>
+                <strong>{shortDateFormatter.format(option.date)}</strong>
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.mobileEmployeeList}>
+            {employees.map((employee) => {
+              const dayShifts = getShiftsForCell(employee.id, mobileActiveDateKey)
+
+              return (
+                <article key={`mobile-${employee.id}`} className={styles.mobileEmployeeCard}>
+                  <div className={styles.mobileEmployeeCardHeader}>
+                    <h3>{employee.name}</h3>
+                    <button
+                      type="button"
+                      className={styles.mobileAddButton}
+                      onClick={() => openCreateShiftModal(employee.id, mobileActiveDateKey, DEFAULT_SHIFT_START)}
+                    >
+                      Добавить
+                    </button>
+                  </div>
+
+                  {dayShifts.length === 0 ? (
+                    <p className={styles.mobileEmpty}>На выбранную дату смен нет</p>
+                  ) : (
+                    <div className={styles.mobileShiftList}>
+                      {dayShifts.map((shift) => (
+                        <button
+                          key={shift.id}
+                          type="button"
+                          className={styles.mobileShiftCard}
+                          onClick={() => openEditShiftModal(shift)}
+                        >
+                          <strong>{shift.title}</strong>
+                          <span>
+                            {formatTime(shift.start)}-{formatTime(shift.end)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+        </section>
+      ) : (
+        <section className={styles.gridWrapper} ref={gridViewportRef}>
         <div className={styles.virtualCanvas} style={{ width: totalGridWidth, height: totalGridHeight }}>
           <div className={styles.virtualHeader} style={{ height: HEADER_HEIGHT }}>
             <div className={styles.employeeHeader} style={{ width: employeeColumnWidth }}>
@@ -663,6 +786,7 @@ function App() {
                             draggable={!resizeState}
                             onDragStart={(event) => handleDragStart(event, shift)}
                             onDragEnd={() => setDraggingShiftId(null)}
+                            onDoubleClick={() => openEditShiftModal(shift)}
                             style={{ left, width }}
                           >
                             <div
@@ -738,6 +862,7 @@ function App() {
                                 draggable={!resizeState}
                                 onDragStart={(event) => handleDragStart(event, shift)}
                                 onDragEnd={() => setDraggingShiftId(null)}
+                                onDoubleClick={() => openEditShiftModal(shift)}
                                 style={{
                                   left: chipLeft,
                                   width: chipWidth,
@@ -774,14 +899,15 @@ function App() {
             )
           })}
         </div>
-      </section>
+        </section>
+      )}
 
       {modalDraft && (
         <div className={styles.modalBackdrop} role="presentation" onClick={closeModal}>
           <div className={styles.modal} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <h2>Добавить смену</h2>
+            <h2>{modalDraft.mode === 'edit' ? 'Редактировать смену' : 'Добавить смену'}</h2>
 
-            <form className={styles.modalForm} onSubmit={handleCreateShift}>
+            <form className={styles.modalForm} onSubmit={handleSaveShift}>
               <label>
                 Название
                 <input
@@ -790,6 +916,22 @@ function App() {
                     setModalDraft((prev) => (prev ? { ...prev, title: event.target.value } : prev))
                   }
                 />
+              </label>
+
+              <label>
+                Сотрудник
+                <select
+                  value={modalDraft.employeeId}
+                  onChange={(event) =>
+                    setModalDraft((prev) => (prev ? { ...prev, employeeId: event.target.value } : prev))
+                  }
+                >
+                  {employees.map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.name}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label>
@@ -830,11 +972,16 @@ function App() {
               {error && <p className={styles.error}>{error}</p>}
 
               <div className={styles.modalActions}>
+                {modalDraft.mode === 'edit' && (
+                  <button type="button" onClick={handleDeleteShift} className={styles.dangerButton}>
+                    Удалить
+                  </button>
+                )}
                 <button type="button" onClick={closeModal} className={styles.ghostButton}>
                   Отмена
                 </button>
                 <button type="submit" className={styles.primaryButton}>
-                  Добавить
+                  {modalDraft.mode === 'edit' ? 'Сохранить' : 'Добавить'}
                 </button>
               </div>
             </form>
@@ -847,9 +994,9 @@ function App() {
         <ol>
           <li>Выберите режим: День, Неделя или Месяц.</li>
           <li>Выберите дату в датапикере сверху.</li>
-          <li>Сделайте двойной клик по ячейке, чтобы добавить смену.</li>
-          <li>Перетаскивайте смены мышью между сотрудниками и датами.</li>
-          <li>Тяните левый или правый край смены, чтобы изменить начало/конец.</li>
+          <li>На десктопе: двойной клик по ячейке добавляет смену, drag and drop переносит смену.</li>
+          <li>На десктопе: тяните левый/правый край смены для изменения начала и конца.</li>
+          <li>На мобильном: откройте смену тапом по карточке и измените время в модалке.</li>
         </ol>
       </footer>
     </div>

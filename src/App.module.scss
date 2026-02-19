@@ -5,7 +5,6 @@ $accent: #1976d2;
 $text: #15243b;
 $muted: #6a798f;
 $row-height: 76px;
-$hour-width: 72px;
 
 .page {
   min-height: 100vh;
@@ -84,23 +83,25 @@ $hour-width: 72px;
 }
 
 .gridWrapper {
+  position: relative;
   background: $panel-bg;
   border: 1px solid $border;
   border-radius: 14px;
   overflow: auto;
   box-shadow: 0 20px 40px rgba(14, 36, 64, 0.08);
+  min-height: 420px;
+  height: min(68vh, 720px);
 }
 
-.gridHeader,
-.gridRow {
-  display: grid;
-  grid-template-columns: 180px 1fr;
+.virtualCanvas {
+  position: relative;
 }
 
-.gridHeader {
+.virtualHeader {
   position: sticky;
   top: 0;
-  z-index: 7;
+  z-index: 20;
+  display: flex;
   background: #f8fbff;
   border-bottom: 1px solid $border;
 }
@@ -114,8 +115,7 @@ $hour-width: 72px;
   font-weight: 700;
   position: sticky;
   left: 0;
-  z-index: 6;
-  background: #f8fbff;
+  flex-shrink: 0;
 }
 
 .employeeHeader {
@@ -124,22 +124,31 @@ $hour-width: 72px;
   text-transform: uppercase;
   color: #3f536d;
   letter-spacing: 0.03em;
+  background: #f8fbff;
+  z-index: 30;
 }
 
 .employeeName {
   min-height: $row-height;
   background: #fbfdff;
+  z-index: 14;
 }
 
-.hoursHeader,
-.cellsLayer {
-  display: grid;
-  grid-template-columns: repeat(24, $hour-width);
-}
-
-.hourCell {
+.virtualHeaderTimeline {
+  position: relative;
   min-height: 54px;
+  flex-shrink: 0;
+}
+
+.virtualHourHeaderCell,
+.virtualDateHeaderCell {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   border-right: 1px dashed $border;
+}
+
+.virtualHourHeaderCell {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -147,22 +156,42 @@ $hour-width: 72px;
   color: $muted;
 }
 
-.gridRow {
-  border-bottom: 1px solid $border;
+.virtualDateHeaderCell {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  color: #3a506d;
 
-  &:last-child {
-    border-bottom: none;
+  span {
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+
+  strong {
+    font-size: 13px;
   }
 }
 
-.timeline {
+.virtualRow {
+  position: absolute;
+  left: 0;
+  display: flex;
+  border-bottom: 1px solid $border;
+  background: #fff;
+}
+
+.virtualDayTimeline,
+.virtualDateTimeline {
   position: relative;
-  min-width: calc(24 * #{$hour-width});
+  flex-shrink: 0;
   min-height: $row-height;
 }
 
-.timelineCell {
-  min-height: $row-height;
+.virtualTimelineCell {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   border-right: 1px dashed $border;
 
   &:hover {
@@ -238,39 +267,15 @@ $hour-width: 72px;
   border-radius: 0 10px 10px 0;
 }
 
-.dateHeader,
-.dateCells {
-  display: grid;
-}
-
-.dateColumnTitle {
-  min-height: 54px;
-  border-right: 1px dashed $border;
-  display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: 2px;
-  color: #3a506d;
-
-  span {
-    font-size: 11px;
-    text-transform: uppercase;
-  }
-
-  strong {
-    font-size: 13px;
-  }
-}
-
-.dateCell {
-  min-height: $row-height;
+.virtualDateCell {
+  position: absolute;
+  top: 0;
+  bottom: 0;
   border-right: 1px dashed $border;
   border-bottom: 1px dashed #e5edf5;
   padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
   background: #fff;
+  overflow: hidden;
 
   &:hover {
     background: #f6fbff;
@@ -280,6 +285,7 @@ $hour-width: 72px;
 .dateTimeline {
   position: relative;
   width: 100%;
+  overflow: hidden;
 }
 
 .shiftChip {
@@ -290,7 +296,7 @@ $hour-width: 72px;
   color: #fff;
   display: flex;
   align-items: stretch;
-  min-height: 24px;
+  min-height: 22px;
   box-shadow: 0 5px 11px rgba(20, 84, 145, 0.2);
   overflow: hidden;
   cursor: grab;
@@ -300,11 +306,11 @@ $hour-width: 72px;
   flex: 1;
   min-width: 0;
   display: grid;
-  gap: 3px;
-  padding: 6px;
+  gap: 2px;
+  padding: 4px 6px;
 
   strong {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1;
   }
 
@@ -397,14 +403,33 @@ $hour-width: 72px;
   color: #fff;
 }
 
+.helpSection {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 10px 24px rgba(14, 36, 64, 0.05);
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: #1b3556;
+  }
+
+  ol {
+    margin: 0;
+    padding-left: 20px;
+    color: #2f4866;
+    display: grid;
+    gap: 4px;
+    font-size: 14px;
+  }
+}
+
 @media (max-width: 900px) {
   .page {
     padding: 14px;
-  }
-
-  .gridHeader,
-  .gridRow {
-    grid-template-columns: 130px 1fr;
   }
 
   .employeeHeader,
@@ -414,5 +439,9 @@ $hour-width: 72px;
 
   .datepicker {
     min-width: 150px;
+  }
+
+  .gridWrapper {
+    min-height: 360px;
   }
 }

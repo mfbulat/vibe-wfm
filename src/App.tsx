@@ -35,6 +35,13 @@ type ResizeState = {
 
 type ViewMode = 'day' | 'week' | 'month'
 
+type VirtualViewport = {
+  width: number
+  height: number
+  scrollTop: number
+  scrollLeft: number
+}
+
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES_IN_DAY = 24 * 60
 const SNAP_MINUTES = 15
@@ -47,11 +54,30 @@ const MINI_HOUR_WIDTH = DATE_TIMELINE_WIDTH / 24
 const MAX_MODAL_MINUTES = MINUTES_IN_DAY - SNAP_MINUTES
 const DEFAULT_SHIFT_START = 9 * 60
 
+const EMPLOYEE_COLUMN_WIDTH_DESKTOP = 180
+const EMPLOYEE_COLUMN_WIDTH_MOBILE = 130
+const MOBILE_BREAKPOINT = 900
+const HEADER_HEIGHT = 54
+const ROW_HEIGHT = 76
+const ROW_OVERSCAN = 4
+const COLUMN_OVERSCAN = 2
+
 const employees: Employee[] = [
   { id: 'e1', name: 'Анна' },
   { id: 'e2', name: 'Борис' },
   { id: 'e3', name: 'Светлана' },
   { id: 'e4', name: 'Дмитрий' },
+  { id: 'e5', name: 'Екатерина' },
+  { id: 'e6', name: 'Иван' },
+  { id: 'e7', name: 'Мария' },
+  { id: 'e8', name: 'Павел' },
+  { id: 'e9', name: 'Ольга' },
+  { id: 'e10', name: 'Никита' },
+  { id: 'e11', name: 'Татьяна' },
+  { id: 'e12', name: 'Владимир' },
+  { id: 'e13', name: 'Юлия' },
+  { id: 'e14', name: 'Алексей' },
+  { id: 'e15', name: 'Ксения' },
 ]
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
@@ -108,6 +134,23 @@ const getMonthDates = (date: Date) => {
 
 const dateCellKey = (employeeId: string, dateKey: string) => `${employeeId}|${dateKey}`
 
+const getVirtualRange = (
+  itemCount: number,
+  itemSize: number,
+  viewportStartPx: number,
+  viewportEndPx: number,
+  overscan: number,
+) => {
+  if (itemCount <= 0) return { start: 0, end: -1 }
+
+  const safeStart = Math.max(viewportStartPx, 0)
+  const safeEnd = Math.max(viewportEndPx, 0)
+  const start = clamp(Math.floor(safeStart / itemSize) - overscan, 0, itemCount - 1)
+  const end = clamp(Math.ceil(safeEnd / itemSize) + overscan, 0, itemCount - 1)
+
+  return { start, end }
+}
+
 const weekdayFormatter = new Intl.DateTimeFormat('ru-RU', { weekday: 'short' })
 const shortDateFormatter = new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit' })
 const fullDateFormatter = new Intl.DateTimeFormat('ru-RU', {
@@ -115,6 +158,7 @@ const fullDateFormatter = new Intl.DateTimeFormat('ru-RU', {
   month: 'long',
   year: 'numeric',
 })
+const monthYearFormatter = new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' })
 
 const today = new Date()
 const todayKey = dateToKey(today)
@@ -154,7 +198,15 @@ function App() {
   const [resizeState, setResizeState] = useState<ResizeState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [modalDraft, setModalDraft] = useState<ModalDraft | null>(null)
+  const [virtualViewport, setVirtualViewport] = useState<VirtualViewport>({
+    width: 0,
+    height: 0,
+    scrollTop: 0,
+    scrollLeft: 0,
+  })
+
   const resizingRef = useRef(false)
+  const gridViewportRef = useRef<HTMLElement | null>(null)
 
   const selectedDateKey = useMemo(() => dateToKey(selectedDate), [selectedDate])
 
@@ -187,6 +239,106 @@ function App() {
   const getShiftsForCell = (employeeId: string, dateKey: string) => {
     return shiftsByEmployeeDate.get(dateCellKey(employeeId, dateKey)) ?? []
   }
+
+  const columnCount = viewMode === 'day' ? HOURS.length : visibleDates.length
+  const columnWidth = viewMode === 'day' ? HOUR_WIDTH : DATE_CELL_WIDTH
+  const employeeColumnWidth =
+    virtualViewport.width > 0 && virtualViewport.width <= MOBILE_BREAKPOINT
+      ? EMPLOYEE_COLUMN_WIDTH_MOBILE
+      : EMPLOYEE_COLUMN_WIDTH_DESKTOP
+  const totalTimelineWidth = columnCount * columnWidth
+  const totalGridWidth = employeeColumnWidth + totalTimelineWidth
+  const totalGridHeight = HEADER_HEIGHT + employees.length * ROW_HEIGHT
+
+  useEffect(() => {
+    const viewport = gridViewportRef.current
+    if (!viewport) return
+
+    const updateViewport = () => {
+      setVirtualViewport({
+        width: viewport.clientWidth,
+        height: viewport.clientHeight,
+        scrollTop: viewport.scrollTop,
+        scrollLeft: viewport.scrollLeft,
+      })
+    }
+
+    updateViewport()
+
+    const onScroll = () => {
+      setVirtualViewport((prev) => ({
+        ...prev,
+        scrollTop: viewport.scrollTop,
+        scrollLeft: viewport.scrollLeft,
+      }))
+    }
+
+    viewport.addEventListener('scroll', onScroll, { passive: true })
+
+    const resizeObserver = new ResizeObserver(updateViewport)
+    resizeObserver.observe(viewport)
+
+    return () => {
+      viewport.removeEventListener('scroll', onScroll)
+      resizeObserver.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    const viewport = gridViewportRef.current
+    if (!viewport) return
+
+    const maxScrollLeft = Math.max(totalGridWidth - viewport.clientWidth, 0)
+    const maxScrollTop = Math.max(totalGridHeight - viewport.clientHeight, 0)
+
+    if (viewport.scrollLeft > maxScrollLeft) {
+      viewport.scrollLeft = maxScrollLeft
+    }
+
+    if (viewport.scrollTop > maxScrollTop) {
+      viewport.scrollTop = maxScrollTop
+    }
+
+    setVirtualViewport({
+      width: viewport.clientWidth,
+      height: viewport.clientHeight,
+      scrollTop: viewport.scrollTop,
+      scrollLeft: viewport.scrollLeft,
+    })
+  }, [totalGridHeight, totalGridWidth])
+
+  const bodyStartPx = Math.max(virtualViewport.scrollTop - HEADER_HEIGHT, 0)
+  const bodyEndPx = bodyStartPx + Math.max(virtualViewport.height - HEADER_HEIGHT, 0)
+
+  const timelineStartPx = Math.max(virtualViewport.scrollLeft - employeeColumnWidth, 0)
+  const timelineEndPx = timelineStartPx + Math.max(virtualViewport.width - employeeColumnWidth, 0)
+
+  const visibleRowRange = getVirtualRange(
+    employees.length,
+    ROW_HEIGHT,
+    bodyStartPx,
+    bodyEndPx,
+    ROW_OVERSCAN,
+  )
+  const visibleColumnRange = getVirtualRange(
+    columnCount,
+    columnWidth,
+    timelineStartPx,
+    timelineEndPx,
+    COLUMN_OVERSCAN,
+  )
+
+  const visibleRowIndexes = useMemo(() => {
+    if (visibleRowRange.end < visibleRowRange.start) return []
+    const size = visibleRowRange.end - visibleRowRange.start + 1
+    return Array.from({ length: size }, (_, i) => visibleRowRange.start + i)
+  }, [visibleRowRange.end, visibleRowRange.start])
+
+  const visibleColumnIndexes = useMemo(() => {
+    if (visibleColumnRange.end < visibleColumnRange.start) return []
+    const size = visibleColumnRange.end - visibleColumnRange.start + 1
+    return Array.from({ length: size }, (_, i) => visibleColumnRange.start + i)
+  }, [visibleColumnRange.end, visibleColumnRange.start])
 
   useEffect(() => {
     if (!resizeState) return
@@ -415,102 +567,40 @@ function App() {
             ? `День: ${fullDateFormatter.format(selectedDate)}. Dblclick по часу для добавления.`
             : viewMode === 'week'
               ? `Неделя от ${shortDateFormatter.format(visibleDates[0])} до ${shortDateFormatter.format(visibleDates[6])}.`
-              : `Месяц: ${new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(selectedDate)}.`}
+              : `Месяц: ${monthYearFormatter.format(selectedDate)}.`}
         </p>
       </header>
 
-      {viewMode === 'day' ? (
-        <section className={styles.gridWrapper}>
-          <div className={styles.gridHeader}>
-            <div className={styles.employeeHeader}>Сотрудник</div>
-            <div className={styles.hoursHeader}>
-              {HOURS.map((hour) => (
-                <div key={hour} className={styles.hourCell}>
-                  {String(hour).padStart(2, '0')}:00
-                </div>
-              ))}
+      <section className={styles.gridWrapper} ref={gridViewportRef}>
+        <div className={styles.virtualCanvas} style={{ width: totalGridWidth, height: totalGridHeight }}>
+          <div className={styles.virtualHeader} style={{ height: HEADER_HEIGHT }}>
+            <div className={styles.employeeHeader} style={{ width: employeeColumnWidth }}>
+              Сотрудник
             </div>
-          </div>
 
-          {employees.map((employee) => {
-            const employeeShifts = getShiftsForCell(employee.id, selectedDateKey)
+            <div className={styles.virtualHeaderTimeline} style={{ width: totalTimelineWidth }}>
+              {visibleColumnIndexes.map((columnIndex) => {
+                const left = columnIndex * columnWidth
 
-            return (
-              <div key={employee.id} className={styles.gridRow}>
-                <div className={styles.employeeName}>{employee.name}</div>
+                if (viewMode === 'day') {
+                  const hour = HOURS[columnIndex]
 
-                <div
-                  className={styles.timeline}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => handleDropOnTimeline(event, employee.id, selectedDateKey)}
-                >
-                  <div className={styles.cellsLayer}>
-                    {HOURS.map((hour) => {
-                      const cellStart = hour * 60
+                  return (
+                    <div key={`header-hour-${hour}`} className={styles.virtualHourHeaderCell} style={{ left, width: columnWidth }}>
+                      {String(hour).padStart(2, '0')}:00
+                    </div>
+                  )
+                }
 
-                      return (
-                        <div
-                          key={`${employee.id}-${hour}`}
-                          className={styles.timelineCell}
-                          onDoubleClick={() => openCreateShiftModal(employee.id, selectedDateKey, cellStart)}
-                        />
-                      )
-                    })}
-                  </div>
+                const date = visibleDates[columnIndex]
+                if (!date) return null
 
-                  <div className={styles.shiftsLayer}>
-                    {employeeShifts.map((shift) => {
-                      const left = (shift.start / 60) * HOUR_WIDTH
-                      const width = ((shift.end - shift.start) / 60) * HOUR_WIDTH
-
-                      return (
-                        <div
-                          key={shift.id}
-                          className={`${styles.shift} ${draggingShiftId === shift.id ? styles.dragging : ''}`}
-                          draggable={!resizeState}
-                          onDragStart={(event) => handleDragStart(event, shift)}
-                          onDragEnd={() => setDraggingShiftId(null)}
-                          style={{ left, width }}
-                        >
-                          <div
-                            className={`${styles.resizeHandle} ${styles.left}`}
-                            onPointerDown={(event) => startResize(event, shift, 'left', HOUR_WIDTH)}
-                            onDragStart={(event) => event.preventDefault()}
-                          />
-
-                          <div className={styles.shiftContent}>
-                            <strong>{shift.title}</strong>
-                            <span>
-                              {formatTime(shift.start)}-{formatTime(shift.end)}
-                            </span>
-                          </div>
-
-                          <div
-                            className={`${styles.resizeHandle} ${styles.right}`}
-                            onPointerDown={(event) => startResize(event, shift, 'right', HOUR_WIDTH)}
-                            onDragStart={(event) => event.preventDefault()}
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </section>
-      ) : (
-        <section className={styles.gridWrapper}>
-          <div className={styles.gridHeader}>
-            <div className={styles.employeeHeader}>Сотрудник</div>
-            <div
-              className={styles.dateHeader}
-              style={{ gridTemplateColumns: `repeat(${visibleDates.length}, ${DATE_CELL_WIDTH}px)` }}
-            >
-              {visibleDates.map((date) => {
-                const key = dateToKey(date)
                 return (
-                  <div key={key} className={styles.dateColumnTitle}>
+                  <div
+                    key={`header-date-${dateToKey(date)}`}
+                    className={styles.virtualDateHeaderCell}
+                    style={{ left, width: columnWidth }}
+                  >
                     <span>{weekdayFormatter.format(date)}</span>
                     <strong>{shortDateFormatter.format(date)}</strong>
                   </div>
@@ -519,73 +609,157 @@ function App() {
             </div>
           </div>
 
-          {employees.map((employee) => (
-            <div key={employee.id} className={styles.gridRow}>
-              <div className={styles.employeeName}>{employee.name}</div>
+          {visibleRowIndexes.map((rowIndex) => {
+            const employee = employees[rowIndex]
+            const rowTop = HEADER_HEIGHT + rowIndex * ROW_HEIGHT
 
-              <div
-                className={styles.dateCells}
-                style={{ gridTemplateColumns: `repeat(${visibleDates.length}, ${DATE_CELL_WIDTH}px)` }}
-              >
-                {visibleDates.map((date) => {
-                  const dateKey = dateToKey(date)
-                  const cellShifts = getShiftsForCell(employee.id, dateKey)
+            if (viewMode === 'day') {
+              const employeeShifts = getShiftsForCell(employee.id, selectedDateKey)
 
-                  return (
-                    <div
-                      key={`${employee.id}-${dateKey}`}
-                      className={styles.dateCell}
-                      onDoubleClick={() => openCreateShiftModal(employee.id, dateKey, DEFAULT_SHIFT_START)}
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={(event) => handleDropOnDateCell(event, employee.id, dateKey)}
-                    >
-                      <div
-                        className={styles.dateTimeline}
-                        style={{ minHeight: Math.max(30, cellShifts.length * 30) }}
-                      >
-                        {cellShifts.map((shift, index) => {
-                          const left = (shift.start / 60) * MINI_HOUR_WIDTH
-                          const width = Math.max(((shift.end - shift.start) / 60) * MINI_HOUR_WIDTH, 22)
+              return (
+                <div
+                  key={`row-day-${employee.id}`}
+                  className={styles.virtualRow}
+                  style={{ top: rowTop, height: ROW_HEIGHT, width: totalGridWidth }}
+                >
+                  <div className={styles.employeeName} style={{ width: employeeColumnWidth }}>
+                    {employee.name}
+                  </div>
 
-                          return (
+                  <div
+                    className={styles.virtualDayTimeline}
+                    style={{ width: totalTimelineWidth }}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => handleDropOnTimeline(event, employee.id, selectedDateKey)}
+                  >
+                    {visibleColumnIndexes.map((columnIndex) => {
+                      const left = columnIndex * columnWidth
+                      const cellStart = columnIndex * 60
+
+                      return (
+                        <div
+                          key={`day-cell-${employee.id}-${columnIndex}`}
+                          className={styles.virtualTimelineCell}
+                          style={{ left, width: columnWidth }}
+                          onDoubleClick={() => openCreateShiftModal(employee.id, selectedDateKey, cellStart)}
+                        />
+                      )
+                    })}
+
+                    <div className={styles.shiftsLayer}>
+                      {employeeShifts.map((shift) => {
+                        const left = (shift.start / 60) * HOUR_WIDTH
+                        const width = ((shift.end - shift.start) / 60) * HOUR_WIDTH
+
+                        return (
+                          <div
+                            key={shift.id}
+                            className={`${styles.shift} ${draggingShiftId === shift.id ? styles.dragging : ''}`}
+                            draggable={!resizeState}
+                            onDragStart={(event) => handleDragStart(event, shift)}
+                            onDragEnd={() => setDraggingShiftId(null)}
+                            style={{ left, width }}
+                          >
                             <div
-                              key={shift.id}
-                              className={`${styles.shiftChip} ${draggingShiftId === shift.id ? styles.dragging : ''}`}
-                              draggable={!resizeState}
-                              onDragStart={(event) => handleDragStart(event, shift)}
-                              onDragEnd={() => setDraggingShiftId(null)}
-                              style={{ left, width, top: index * 30 }}
-                            >
-                              <div
-                                className={`${styles.resizeHandle} ${styles.left}`}
-                                onPointerDown={(event) => startResize(event, shift, 'left', MINI_HOUR_WIDTH)}
-                                onDragStart={(event) => event.preventDefault()}
-                              />
+                              className={`${styles.resizeHandle} ${styles.left}`}
+                              onPointerDown={(event) => startResize(event, shift, 'left', HOUR_WIDTH)}
+                              onDragStart={(event) => event.preventDefault()}
+                            />
 
-                              <div className={styles.shiftChipContent}>
-                                <strong>{shift.title}</strong>
-                                <span>
-                                  {formatTime(shift.start)}-{formatTime(shift.end)}
-                                </span>
-                              </div>
-
-                              <div
-                                className={`${styles.resizeHandle} ${styles.right}`}
-                                onPointerDown={(event) => startResize(event, shift, 'right', MINI_HOUR_WIDTH)}
-                                onDragStart={(event) => event.preventDefault()}
-                              />
+                            <div className={styles.shiftContent}>
+                              <strong>{shift.title}</strong>
+                              <span>
+                                {formatTime(shift.start)}-{formatTime(shift.end)}
+                              </span>
                             </div>
-                          )
-                        })}
-                      </div>
+
+                            <div
+                              className={`${styles.resizeHandle} ${styles.right}`}
+                              onPointerDown={(event) => startResize(event, shift, 'right', HOUR_WIDTH)}
+                              onDragStart={(event) => event.preventDefault()}
+                            />
+                          </div>
+                        )
+                      })}
                     </div>
-                  )
-                })}
+                  </div>
+                </div>
+              )
+            }
+
+            return (
+              <div
+                key={`row-date-${employee.id}`}
+                className={styles.virtualRow}
+                style={{ top: rowTop, height: ROW_HEIGHT, width: totalGridWidth }}
+              >
+                <div className={styles.employeeName} style={{ width: employeeColumnWidth }}>
+                  {employee.name}
+                </div>
+
+                <div className={styles.virtualDateTimeline} style={{ width: totalTimelineWidth }}>
+                  {visibleColumnIndexes.map((columnIndex) => {
+                    const date = visibleDates[columnIndex]
+                    if (!date) return null
+
+                    const left = columnIndex * columnWidth
+                    const dateKey = dateToKey(date)
+                    const cellShifts = getShiftsForCell(employee.id, dateKey)
+
+                    return (
+                      <div
+                        key={`date-cell-${employee.id}-${dateKey}`}
+                        className={styles.virtualDateCell}
+                        style={{ left, width: columnWidth }}
+                        onDoubleClick={() => openCreateShiftModal(employee.id, dateKey, DEFAULT_SHIFT_START)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDrop={(event) => handleDropOnDateCell(event, employee.id, dateKey)}
+                      >
+                        <div className={styles.dateTimeline} style={{ minHeight: ROW_HEIGHT - 12 }}>
+                          {cellShifts.map((shift, index) => {
+                            const chipLeft = (shift.start / 60) * MINI_HOUR_WIDTH
+                            const chipWidth = Math.max(((shift.end - shift.start) / 60) * MINI_HOUR_WIDTH, 22)
+
+                            return (
+                              <div
+                                key={shift.id}
+                                className={`${styles.shiftChip} ${draggingShiftId === shift.id ? styles.dragging : ''}`}
+                                draggable={!resizeState}
+                                onDragStart={(event) => handleDragStart(event, shift)}
+                                onDragEnd={() => setDraggingShiftId(null)}
+                                style={{ left: chipLeft, width: chipWidth, top: index * 24 }}
+                              >
+                                <div
+                                  className={`${styles.resizeHandle} ${styles.left}`}
+                                  onPointerDown={(event) => startResize(event, shift, 'left', MINI_HOUR_WIDTH)}
+                                  onDragStart={(event) => event.preventDefault()}
+                                />
+
+                                <div className={styles.shiftChipContent}>
+                                  <strong>{shift.title}</strong>
+                                  <span>
+                                    {formatTime(shift.start)}-{formatTime(shift.end)}
+                                  </span>
+                                </div>
+
+                                <div
+                                  className={`${styles.resizeHandle} ${styles.right}`}
+                                  onPointerDown={(event) => startResize(event, shift, 'right', MINI_HOUR_WIDTH)}
+                                  onDragStart={(event) => event.preventDefault()}
+                                />
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </section>
-      )}
+            )
+          })}
+        </div>
+      </section>
 
       {modalDraft && (
         <div className={styles.modalBackdrop} role="presentation" onClick={closeModal}>
@@ -652,6 +826,17 @@ function App() {
           </div>
         </div>
       )}
+
+      <footer className={styles.helpSection}>
+        <h3>Как пользоваться WFM</h3>
+        <ol>
+          <li>Выберите режим: День, Неделя или Месяц.</li>
+          <li>Выберите дату в датапикере сверху.</li>
+          <li>Сделайте двойной клик по ячейке, чтобы добавить смену.</li>
+          <li>Перетаскивайте смены мышью между сотрудниками и датами.</li>
+          <li>Тяните левый или правый край смены, чтобы изменить начало/конец.</li>
+        </ol>
+      </footer>
     </div>
   )
 }

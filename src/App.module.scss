@@ -99,6 +99,18 @@ $row-height: 76px;
   font-weight: 600;
 }
 
+.toolbarAddButton {
+  border: 1px solid #1b70c7;
+  background: linear-gradient(135deg, #2f8de8, #1a66bf);
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  align-self: flex-end;
+}
+
 .gridWrapper {
   position: relative;
   background: $panel-bg;
@@ -619,6 +631,11 @@ $row-height: 76px;
 
   .periodBadge {
     width: 100%;
+  }
+
+  .toolbarAddButton {
+    width: 100%;
+    align-self: stretch;
   }
 
   .mobileBoard {

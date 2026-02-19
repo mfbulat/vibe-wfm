@@ -225,6 +225,7 @@ function App() {
     const [resizeState, setResizeState] = useState<ResizeState | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [modalDraft, setModalDraft] = useState<ModalDraft | null>(null)
+    const [highlightedColumnDateKey, setHighlightedColumnDateKey] = useState<string | null>(null)
     const [isStorageReady, setIsStorageReady] = useState(false)
     const [virtualViewport, setVirtualViewport] = useState<VirtualViewport>({
         width: 0,
@@ -235,6 +236,8 @@ function App() {
 
     const resizingRef = useRef(false)
     const gridViewportRef = useRef<HTMLElement | null>(null)
+    const datepickerTargetDateKeyRef = useRef<string | null>(null)
+    const highlightTimerRef = useRef<number | null>(null)
 
     const selectedDateKey = useMemo(() => dateToKey(selectedDate), [selectedDate])
 
@@ -358,13 +361,20 @@ function App() {
     }, [totalGridHeight, totalGridWidth])
 
     useEffect(() => {
-        if (viewMode !== 'month' || isMobile) return
+        if (isMobile) return
+        if (viewMode !== 'week' && viewMode !== 'month') return
+
+        const targetDateKey = datepickerTargetDateKeyRef.current
+        if (!targetDateKey) return
 
         const viewport = gridViewportRef.current
         if (!viewport) return
 
-        const targetIndex = visibleDates.findIndex((date) => dateToKey(date) === selectedDateKey)
-        if (targetIndex < 0) return
+        const targetIndex = visibleDates.findIndex((date) => dateToKey(date) === targetDateKey)
+        if (targetIndex < 0) {
+            datepickerTargetDateKeyRef.current = null
+            return
+        }
 
         const timelineViewportWidth = Math.max(viewport.clientWidth - employeeColumnWidth, columnWidth)
         const targetColumnLeft = targetIndex * columnWidth
@@ -385,7 +395,17 @@ function App() {
             left: centeredScrollLeft,
             behavior: 'smooth',
         })
-    }, [columnWidth, employeeColumnWidth, isMobile, selectedDateKey, totalGridWidth, viewMode, visibleDates])
+
+        datepickerTargetDateKeyRef.current = null
+    }, [columnWidth, employeeColumnWidth, isMobile, totalGridWidth, viewMode, visibleDates])
+
+    useEffect(() => {
+        return () => {
+            if (highlightTimerRef.current !== null) {
+                window.clearTimeout(highlightTimerRef.current)
+            }
+        }
+    }, [])
 
     const bodyStartPx = Math.max(virtualViewport.scrollTop - HEADER_HEIGHT, 0)
     const bodyEndPx = bodyStartPx + Math.max(virtualViewport.height - HEADER_HEIGHT, 0)
@@ -678,7 +698,24 @@ function App() {
 
     const onDatepickerChange = (value: string) => {
         const parsed = parseDateKey(value)
-        if (parsed) setSelectedDate(parsed)
+        if (!parsed) return
+
+        const parsedDateKey = dateToKey(parsed)
+        datepickerTargetDateKeyRef.current = parsedDateKey
+        setSelectedDate(parsed)
+
+        if (!isMobile && (viewMode === 'week' || viewMode === 'month')) {
+            setHighlightedColumnDateKey(parsedDateKey)
+
+            if (highlightTimerRef.current !== null) {
+                window.clearTimeout(highlightTimerRef.current)
+            }
+
+            highlightTimerRef.current = window.setTimeout(() => {
+                setHighlightedColumnDateKey(null)
+                highlightTimerRef.current = null
+            }, 2000)
+        }
     }
 
     const periodLabel =
@@ -830,7 +867,7 @@ function App() {
                                     return (
                                         <div
                                             key={`header-date-${headerDateKey}`}
-                                            className={`${styles.virtualDateHeaderCell} ${headerDateKey === todayKey ? styles.todayDateHeader : ''}`}
+                                            className={`${styles.virtualDateHeaderCell} ${headerDateKey === todayKey ? styles.todayDateHeader : ''} ${headerDateKey === highlightedColumnDateKey ? styles.highlightedDateColumn : ''}`}
                                             style={{left, width: columnWidth}}
                                         >
                                             <span>{weekdayFormatter.format(date)}</span>

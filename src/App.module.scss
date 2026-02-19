@@ -323,14 +323,20 @@ $row-height: 76px;
   justify-items: center;
   gap: 2px;
   color: #3a506d;
+  transition:
+    background 0.45s ease,
+    box-shadow 0.45s ease,
+    color 0.45s ease;
 
   span {
     font-size: 11px;
     text-transform: uppercase;
+    transition: color 0.45s ease;
   }
 
   strong {
     font-size: 13px;
+    transition: color 0.45s ease;
   }
 }
 
@@ -347,6 +353,11 @@ $row-height: 76px;
   strong {
     color: #14508a;
   }
+}
+
+.virtualDateHeaderCell.highlightedDateColumn {
+  background: linear-gradient(180deg, #fff2c8, #fff9e6);
+  box-shadow: inset 0 -2px 0 #e3a51c;
 }
 
 .virtualRow {

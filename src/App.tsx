@@ -793,7 +793,10 @@ function App() {
                                                             draggable={!resizeState}
                                                             onDragStart={(event) => handleDragStart(event, shift)}
                                                             onDragEnd={() => setDraggingShiftId(null)}
-                                                            onDoubleClick={() => openEditShiftModal(shift)}
+                                                            onDoubleClick={(event) => {
+                                                                event.stopPropagation()
+                                                                openEditShiftModal(shift)
+                                                            }}
                                                             style={{left, width}}
                                                         >
                                                             <div
@@ -871,7 +874,10 @@ function App() {
                                                                     draggable={!resizeState}
                                                                     onDragStart={(event) => handleDragStart(event, shift)}
                                                                     onDragEnd={() => setDraggingShiftId(null)}
-                                                                    onDoubleClick={() => openEditShiftModal(shift)}
+                                                                    onDoubleClick={(event) => {
+                                                                        event.stopPropagation()
+                                                                        openEditShiftModal(shift)
+                                                                    }}
                                                                     style={{
                                                                         left: chipLeft,
                                                                         width: chipWidth,
@@ -989,11 +995,14 @@ function App() {
                             {error && <p className={styles.error}>{error}</p>}
 
                             <div className={styles.modalActions}>
-                                {modalDraft.mode === 'edit' && (
-                                    <button type="button" onClick={handleDeleteShift} className={styles.dangerButton}>
-                                        Удалить
-                                    </button>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={handleDeleteShift}
+                                    className={styles.dangerButton}
+                                    disabled={modalDraft.mode !== 'edit'}
+                                >
+                                    Удалить
+                                </button>
                                 <button type="button" onClick={closeModal} className={styles.ghostButton}>
                                     Отмена
                                 </button>

@@ -567,6 +567,11 @@ $row-height: 76px;
   background: #ffe8e6;
   border-color: #f6b6b1;
   color: #912018;
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
 }
 
 .helpSection {

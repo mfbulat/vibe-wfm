@@ -357,6 +357,36 @@ function App() {
         })
     }, [totalGridHeight, totalGridWidth])
 
+    useEffect(() => {
+        if (viewMode !== 'month' || isMobile) return
+
+        const viewport = gridViewportRef.current
+        if (!viewport) return
+
+        const targetIndex = visibleDates.findIndex((date) => dateToKey(date) === selectedDateKey)
+        if (targetIndex < 0) return
+
+        const timelineViewportWidth = Math.max(viewport.clientWidth - employeeColumnWidth, columnWidth)
+        const targetColumnLeft = targetIndex * columnWidth
+        const targetColumnRight = targetColumnLeft + columnWidth
+        const currentTimelineLeft = viewport.scrollLeft
+        const currentTimelineRight = currentTimelineLeft + timelineViewportWidth
+
+        if (targetColumnLeft >= currentTimelineLeft && targetColumnRight <= currentTimelineRight) return
+
+        const maxScrollLeft = Math.max(totalGridWidth - viewport.clientWidth, 0)
+        const centeredScrollLeft = clamp(
+            targetColumnLeft - Math.max((timelineViewportWidth - columnWidth) / 2, 0),
+            0,
+            maxScrollLeft,
+        )
+
+        viewport.scrollTo({
+            left: centeredScrollLeft,
+            behavior: 'smooth',
+        })
+    }, [columnWidth, employeeColumnWidth, isMobile, selectedDateKey, totalGridWidth, viewMode, visibleDates])
+
     const bodyStartPx = Math.max(virtualViewport.scrollTop - HEADER_HEIGHT, 0)
     const bodyEndPx = bodyStartPx + Math.max(virtualViewport.height - HEADER_HEIGHT, 0)
 

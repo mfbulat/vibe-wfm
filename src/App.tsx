@@ -53,6 +53,8 @@ const DATE_TIMELINE_WIDTH = DATE_CELL_WIDTH - DATE_CELL_PADDING * 2
 const MINI_HOUR_WIDTH = DATE_TIMELINE_WIDTH / 24
 const MAX_MODAL_MINUTES = MINUTES_IN_DAY - SNAP_MINUTES
 const DEFAULT_SHIFT_START = 9 * 60
+const DATE_CHIP_HEIGHT = 30
+const DATE_CHIP_GAP = 4
 
 const EMPLOYEE_COLUMN_WIDTH_DESKTOP = 180
 const EMPLOYEE_COLUMN_WIDTH_MOBILE = 130
@@ -708,6 +710,12 @@ function App() {
                     const left = columnIndex * columnWidth
                     const dateKey = dateToKey(date)
                     const cellShifts = getShiftsForCell(employee.id, dateKey)
+                    const timelineInnerHeight = ROW_HEIGHT - 12
+                    const stackHeight = Math.max(
+                      0,
+                      cellShifts.length * DATE_CHIP_HEIGHT + (cellShifts.length - 1) * DATE_CHIP_GAP,
+                    )
+                    const topOffset = Math.max((timelineInnerHeight - stackHeight) / 2, 0)
 
                     return (
                       <div
@@ -730,7 +738,11 @@ function App() {
                                 draggable={!resizeState}
                                 onDragStart={(event) => handleDragStart(event, shift)}
                                 onDragEnd={() => setDraggingShiftId(null)}
-                                style={{ left: chipLeft, width: chipWidth, top: index * 24 }}
+                                style={{
+                                  left: chipLeft,
+                                  width: chipWidth,
+                                  top: topOffset + index * (DATE_CHIP_HEIGHT + DATE_CHIP_GAP),
+                                }}
                               >
                                 <div
                                   className={`${styles.resizeHandle} ${styles.left}`}

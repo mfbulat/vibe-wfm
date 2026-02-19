@@ -533,6 +533,13 @@ function App() {
     if (parsed) setSelectedDate(parsed)
   }
 
+  const periodLabel =
+    viewMode === 'day'
+      ? `День: ${fullDateFormatter.format(selectedDate)}`
+      : viewMode === 'week'
+        ? `Неделя: ${shortDateFormatter.format(visibleDates[0])} - ${shortDateFormatter.format(visibleDates[6])}`
+        : `Месяц: ${monthYearFormatter.format(selectedDate)}`
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -551,24 +558,20 @@ function App() {
             ))}
           </div>
 
-          <label className={styles.datepickerLabel}>
-            Дата
-            <input
-              type="date"
-              value={selectedDateKey}
-              onChange={(event) => onDatepickerChange(event.target.value)}
-              className={styles.datepicker}
-            />
-          </label>
-        </div>
+          <div className={styles.dateControls}>
+            <label className={styles.datepickerLabel}>
+              Дата
+              <input
+                type="date"
+                value={selectedDateKey}
+                onChange={(event) => onDatepickerChange(event.target.value)}
+                className={styles.datepicker}
+              />
+            </label>
 
-        <p className={styles.hintText}>
-          {viewMode === 'day'
-            ? `День: ${fullDateFormatter.format(selectedDate)}. Dblclick по часу для добавления.`
-            : viewMode === 'week'
-              ? `Неделя от ${shortDateFormatter.format(visibleDates[0])} до ${shortDateFormatter.format(visibleDates[6])}.`
-              : `Месяц: ${monthYearFormatter.format(selectedDate)}.`}
-        </p>
+            <div className={styles.periodBadge}>{periodLabel}</div>
+          </div>
+        </div>
       </header>
 
       <section className={styles.gridWrapper} ref={gridViewportRef}>

@@ -7,12 +7,16 @@ $muted: #6a798f;
 $row-height: 76px;
 
 .page {
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   background: radial-gradient(circle at 12% 8%, #d6e9ff 0%, transparent 38%),
     radial-gradient(circle at 88% 10%, #e4f6e3 0%, transparent 33%),
     $page-bg;
   color: $text;
   padding: 28px 28px 40px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
@@ -31,6 +35,13 @@ $row-height: 76px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.dateControls {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .viewSwitch {
@@ -76,10 +87,14 @@ $row-height: 76px;
   color: #173254;
 }
 
-.hintText {
-  margin: 12px 0 0;
-  color: $muted;
-  font-size: 14px;
+.periodBadge {
+  border: 1px solid #cfdceb;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #2d4867;
+  font-weight: 600;
 }
 
 .gridWrapper {
@@ -89,8 +104,8 @@ $row-height: 76px;
   border-radius: 14px;
   overflow: auto;
   box-shadow: 0 20px 40px rgba(14, 36, 64, 0.08);
-  min-height: 420px;
-  height: min(68vh, 720px);
+  min-height: 220px;
+  flex: 1 1 auto;
 }
 
 .virtualCanvas {
@@ -442,6 +457,6 @@ $row-height: 76px;
   }
 
   .gridWrapper {
-    min-height: 360px;
+    min-height: 200px;
   }
 }

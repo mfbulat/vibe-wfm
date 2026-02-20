@@ -37,6 +37,17 @@ type ResizeState = {
 }
 
 type ViewMode = 'day' | 'week' | 'month'
+type ThemeId =
+    | 'aurora'
+    | 'sand'
+    | 'forest'
+    | 'sunset'
+    | 'ocean'
+    | 'citrus'
+    | 'slate'
+    | 'rose'
+    | 'ice'
+    | 'earth'
 
 type VirtualViewport = {
     width: number
@@ -58,6 +69,7 @@ const MAX_MODAL_MINUTES = MINUTES_IN_DAY - SNAP_MINUTES
 const DEFAULT_SHIFT_START = 9 * 60
 const DATE_CHIP_GAP = 4
 const VIEW_MODE_STORAGE_KEY = 'vibe-wfm:view-mode'
+const THEME_STORAGE_KEY = 'vibe-wfm:theme'
 
 const EMPLOYEE_COLUMN_WIDTH_DESKTOP = 180
 const EMPLOYEE_COLUMN_WIDTH_MOBILE = 130
@@ -185,6 +197,35 @@ const monthYearFormatter = new Intl.DateTimeFormat('ru-RU', {month: 'long', year
 
 const today = new Date()
 const todayKey = dateToKey(today)
+const themeOptions: Array<{id: ThemeId; label: string}> = [
+    {id: 'aurora', label: 'Aurora'},
+    {id: 'sand', label: 'Sand Dune'},
+    {id: 'forest', label: 'Forest Mist'},
+    {id: 'sunset', label: 'Sunset Glow'},
+    {id: 'ocean', label: 'Ocean Breeze'},
+    {id: 'citrus', label: 'Citrus Pop'},
+    {id: 'slate', label: 'Slate Graphite'},
+    {id: 'rose', label: 'Rose Quartz'},
+    {id: 'ice', label: 'Ice Crystal'},
+    {id: 'earth', label: 'Earth Clay'},
+]
+
+const isThemeId = (value: string): value is ThemeId => themeOptions.some((theme) => theme.id === value)
+
+const getInitialTheme = (): ThemeId => {
+    if (typeof window === 'undefined') return 'aurora'
+
+    try {
+        const stored = window.localStorage.getItem(THEME_STORAGE_KEY)
+        if (stored && isThemeId(stored)) {
+            return stored
+        }
+    } catch (error) {
+        console.error('Failed to read theme from localStorage:', error)
+    }
+
+    return 'aurora'
+}
 
 const initialShifts: Shift[] = [
     {
@@ -215,6 +256,7 @@ const initialShifts: Shift[] = [
 
 function App() {
     const [viewMode, setViewMode] = useState<ViewMode>(getInitialViewMode)
+    const [themeId, setThemeId] = useState<ThemeId>(getInitialTheme)
     const [selectedDate, setSelectedDate] = useState<Date>(new Date())
     const [isMobile, setIsMobile] = useState(() =>
         typeof window !== 'undefined' ? window.innerWidth <= MOBILE_BREAKPOINT : false,
@@ -302,6 +344,14 @@ function App() {
             console.error('Failed to save view mode to localStorage:', error)
         }
     }, [viewMode])
+
+    useEffect(() => {
+        try {
+            window.localStorage.setItem(THEME_STORAGE_KEY, themeId)
+        } catch (error) {
+            console.error('Failed to save theme to localStorage:', error)
+        }
+    }, [themeId])
 
     useEffect(() => {
         const viewport = gridViewportRef.current
@@ -739,9 +789,30 @@ function App() {
     const toolbarDateKey = isMobile ? mobileActiveDateKey : selectedDateKey
 
     return (
-        <div className={styles.page}>
+        <div className={styles.page} data-theme={themeId}>
             <header className={styles.header}>
-                <h1>WFM Scheduler</h1>
+                <div className={styles.headerTop}>
+                    <div className={styles.titleRow}>
+                        <h1>WFM Scheduler</h1>
+                        <select
+                            value={themeId}
+                            onChange={(event) => {
+                                const nextTheme = event.target.value
+                                if (isThemeId(nextTheme)) {
+                                    setThemeId(nextTheme)
+                                }
+                            }}
+                            className={styles.themePicker}
+                            aria-label="Выбор цветовой темы"
+                        >
+                            {themeOptions.map((theme) => (
+                                <option key={theme.id} value={theme.id}>
+                                    {theme.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
                 <div className={styles.toolbar}>
                     <div className={styles.modeControls}>
                         <div className={styles.viewSwitch}>

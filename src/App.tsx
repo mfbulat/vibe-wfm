@@ -281,7 +281,7 @@ const translations: Record<
         help5: 'Перетаскивайте смены между ячейками на десктопе с помощью drag and drop.',
         help6: 'На десктопе тяните левый/правый край смены, чтобы изменить начало и конец.',
         help7: 'Удаление доступно в модалке редактирования кнопкой "Удалить".',
-        help8: 'В режимах Неделя/Месяц при выборе даты таблица скроллится к дню и подсвечивает заголовок.',
+        help8: 'В режимах Неделя/Месяц при выборе даты таблица скроллится к дню и подсвечивает заголовок. Внизу страницы можно выбрать тему и язык интерфейса.',
         themeAria: 'Выбор цветовой темы', languageLabel: 'Язык', languageAria: 'Выбор языка интерфейса',
     },
     en: {
@@ -301,7 +301,7 @@ const translations: Record<
         help5: 'Drag and drop shifts between cells on desktop.',
         help6: 'On desktop, drag the left/right edge of a shift to change start and end.',
         help7: 'Delete is available in the edit modal via the "Delete" button.',
-        help8: 'In Week/Month mode, date picker scrolls to the day and highlights the header.',
+        help8: 'In Week/Month mode, date picker scrolls to the day and highlights the header. At the bottom, you can choose theme and interface language.',
         themeAria: 'Theme selector', languageLabel: 'Language', languageAria: 'Interface language selector',
     },
     es: {modeDay: 'Día', modeWeek: 'Semana', modeMonth: 'Mes', periodDay: 'Día', periodWeek: 'Semana', periodMonth: 'Mes', dateLabel: 'Fecha', addShift: 'Añadir turno', employeeHeader: 'Empleado', noShiftsForDate: 'No hay turnos para la fecha seleccionada', editShift: 'Editar turno', createShift: 'Añadir turno', titleLabel: 'Título', employeeLabel: 'Empleado', startLabel: 'Inicio', endLabel: 'Fin', delete: 'Eliminar', cancel: 'Cancelar', save: 'Guardar', invalidDate: 'Indica una fecha válida', invalidTime: 'Introduce una hora válida en formato HH:MM', endAfterStart: 'El fin debe ser posterior al inicio', minShiftDuration: 'Duración mínima del turno', defaultShiftTitle: 'Turno', newShiftTitle: 'Nuevo turno', helpTitle: 'Cómo usar WFM', helpMobileHint: 'Para todas las funciones, es mejor usar escritorio.', help1: 'Elige un modo: Día, Semana o Mes.', help2: 'Selecciona una fecha en el selector superior.', help3: 'Añade turnos con "Añadir turno" o doble clic en una celda (escritorio).', help4: 'Edita un turno con doble clic (escritorio) o toque en tarjeta (móvil).', help5: 'Arrastra y suelta turnos entre celdas en escritorio.', help6: 'En escritorio, arrastra el borde izquierdo/derecho para cambiar inicio y fin.', help7: 'Puedes eliminar desde la ventana de edición con "Eliminar".', help8: 'En Semana/Mes, el selector desplaza al día y resalta el encabezado.', themeAria: 'Selector de tema', languageLabel: 'Idioma', languageAria: 'Selector de idioma'},

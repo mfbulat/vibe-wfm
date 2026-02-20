@@ -915,6 +915,25 @@ function App() {
         }
     }
 
+    const handleViewModeChange = (mode: ViewMode) => {
+        setViewMode(mode)
+
+        if (!isMobile && (mode === 'week' || mode === 'month')) {
+            const targetDateKey = dateToKey(selectedDate)
+            datepickerTargetDateKeyRef.current = targetDateKey
+            setHighlightedColumnDateKey(targetDateKey)
+
+            if (highlightTimerRef.current !== null) {
+                window.clearTimeout(highlightTimerRef.current)
+            }
+
+            highlightTimerRef.current = window.setTimeout(() => {
+                setHighlightedColumnDateKey(null)
+                highlightTimerRef.current = null
+            }, 2000)
+        }
+    }
+
     const activeLocale = languageOptions.find((lang) => lang.id === languageId)?.locale ?? 'ru-RU'
     const weekdayFormatter = useMemo(() => new Intl.DateTimeFormat(activeLocale, {weekday: 'short'}), [activeLocale])
     const shortDateFormatter = useMemo(() => new Intl.DateTimeFormat(activeLocale, {day: '2-digit', month: '2-digit'}), [activeLocale])
@@ -966,7 +985,7 @@ function App() {
                                 <button
                                     key={mode}
                                     type="button"
-                                    onClick={() => setViewMode(mode)}
+                                    onClick={() => handleViewModeChange(mode)}
                                     className={`${styles.viewButton} ${viewMode === mode ? styles.activeView : ''}`}
                                 >
                                     {mode === 'day' ? t.modeDay : mode === 'week' ? t.modeWeek : t.modeMonth}

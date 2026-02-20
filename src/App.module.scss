@@ -460,12 +460,6 @@ $row-height: 76px;
   gap: 12px;
 }
 
-.titleRow {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .themePicker {
   min-width: 160px;
   border: 1px solid var(--accent-soft-border);
@@ -1090,6 +1084,48 @@ $row-height: 76px;
   }
 }
 
+.footerControls {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--panel-border);
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.themePickerLabel,
+.languagePickerLabel {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.languagePicker {
+  min-width: 190px;
+  border: 1px solid var(--accent-soft-border);
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent-soft-bg), var(--surface-soft-2));
+  color: var(--accent-soft-text);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:focus {
+    outline: 2px solid var(--focus-ring);
+    border-color: var(--accent);
+  }
+
+  option {
+    color: var(--control-text);
+    background: var(--panel-bg);
+  }
+}
+
 .mobileDesktopHint {
   list-style-position: inside;
   margin-left: -20px;
@@ -1114,6 +1150,21 @@ $row-height: 76px;
 
   .themePicker {
     width: auto;
+    min-width: 0;
+  }
+
+  .footerControls {
+    justify-content: stretch;
+  }
+
+  .themePickerLabel,
+  .languagePickerLabel {
+    width: 100%;
+  }
+
+  .themePicker,
+  .languagePicker {
+    width: 100%;
     min-width: 0;
   }
 

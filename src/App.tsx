@@ -79,8 +79,6 @@ const MIN_SHIFT_MINUTES = 30
 const HOUR_WIDTH = 72
 const DATE_CELL_WIDTH = 160
 const DATE_CELL_PADDING = 6
-const DATE_TIMELINE_WIDTH = DATE_CELL_WIDTH - DATE_CELL_PADDING * 2
-const MINI_HOUR_WIDTH = DATE_TIMELINE_WIDTH / 24
 const MAX_MODAL_MINUTES = MINUTES_IN_DAY - SNAP_MINUTES
 const DEFAULT_SHIFT_START = 9 * 60
 const DATE_CHIP_GAP = 4
@@ -463,6 +461,7 @@ function App() {
             ? Math.max((virtualViewport.width - employeeColumnWidth) / 7, 1)
             : DATE_CELL_WIDTH
     const columnWidth = viewMode === 'day' ? HOUR_WIDTH : weekAdaptiveColumnWidth
+    const dateTimelineHourWidth = Math.max((columnWidth - DATE_CELL_PADDING * 2) / 24, 1)
     const totalTimelineWidth = columnCount * columnWidth
     const totalGridWidth = employeeColumnWidth + totalTimelineWidth
     const totalGridHeight = HEADER_HEIGHT + employees.length * ROW_HEIGHT
@@ -1216,8 +1215,8 @@ function App() {
                                                     <div className={styles.dateTimeline}
                                                          style={{minHeight: ROW_HEIGHT - 12}}>
                                                         {cellShifts.map((shift, index) => {
-                                                            const chipLeft = (shift.start / 60) * MINI_HOUR_WIDTH
-                                                            const chipWidth = Math.max(((shift.end - shift.start) / 60) * MINI_HOUR_WIDTH, 22)
+                                                            const chipLeft = (shift.start / 60) * dateTimelineHourWidth
+                                                            const chipWidth = Math.max(((shift.end - shift.start) / 60) * dateTimelineHourWidth, 22)
 
                                                             return (
                                                                 <div
@@ -1239,7 +1238,7 @@ function App() {
                                                                 >
                                                                     <div
                                                                         className={`${styles.resizeHandle} ${styles.left}`}
-                                                                        onPointerDown={(event) => startResize(event, shift, 'left', MINI_HOUR_WIDTH)}
+                                                                        onPointerDown={(event) => startResize(event, shift, 'left', dateTimelineHourWidth)}
                                                                         onDragStart={(event) => event.preventDefault()}
                                                                     />
 
@@ -1252,7 +1251,7 @@ function App() {
 
                                                                     <div
                                                                         className={`${styles.resizeHandle} ${styles.right}`}
-                                                                        onPointerDown={(event) => startResize(event, shift, 'right', MINI_HOUR_WIDTH)}
+                                                                        onPointerDown={(event) => startResize(event, shift, 'right', dateTimelineHourWidth)}
                                                                         onDragStart={(event) => event.preventDefault()}
                                                                     />
                                                                 </div>
